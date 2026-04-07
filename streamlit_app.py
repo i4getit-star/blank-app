@@ -116,6 +116,11 @@ if st.button("🔍 Get Solar Predictions", use_container_width=True):
                 
                 # Make API request
                 response = requests.get(SOLCAST_API_BASE, params=params)
+                
+                # Debug info
+                st.write(f"Status: {response.status_code}")
+                st.write(f"URL: {response.url}")
+                
                 response.raise_for_status()
                 data = response.json()
                 
@@ -124,8 +129,14 @@ if st.button("🔍 Get Solar Predictions", use_container_width=True):
                     df = pd.DataFrame(data["forecasts"])
                     # Parse datetime columns
                     df["period_end"] = pd.to_datetime(df["period_end"])
+                elif "data" in data or "radiation_data" in data:
+                    # Try alternate response format
+                    df = pd.DataFrame(data.get("data", data.get("radiation_data", [])))
+                    if "period_end" in df.columns:
+                        df["period_end"] = pd.to_datetime(df["period_end"])
                 else:
                     st.error("❌ No forecast data in response")
+                    st.json(data)
                     raise ValueError("Invalid API response format")
                 
                 st.divider()
