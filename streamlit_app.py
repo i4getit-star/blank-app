@@ -114,12 +114,11 @@ if st.button("🔍 Get Solar Predictions", use_container_width=True):
                     "output_parameters": ",".join(selected_output_parameters)
                 }
                 
-                # Make API request
-                response = requests.get(SOLCAST_API_BASE, params=params)
-                
-                # Debug info
-                st.write(f"Status: {response.status_code}")
-                st.write(f"URL: {response.url}")
+                # Make API request with browser-like headers
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                }
+                response = requests.get(SOLCAST_API_BASE, params=params, headers=headers)
                 
                 response.raise_for_status()
                 data = response.json()
