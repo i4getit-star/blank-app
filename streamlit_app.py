@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-SOLCAST_API_BASE = "https://api.solcast.com.au/world_radiation_nwp_tlmy/forecasts"
-SOLCAST_HISTORIC_BASE = "https://api.solcast.com.au/world_radiation_nwp_tlmy/historic"
+SOLCAST_API_BASE = "https://api.solcast.com.au/world_radiation/forecasts"
+SOLCAST_HISTORIC_BASE = "https://api.solcast.com.au/world_radiation/historic"
 
 # Page configuration
 st.set_page_config(
@@ -245,6 +245,10 @@ if st.button("🔍 Get Solar Predictions", use_container_width=True):
                                     delta=f"Avg: {df[param].mean():.2f}"
                                 )
             
+            except requests.exceptions.HTTPError as e:
+                status = e.response.status_code if e.response is not None else "unknown"
+                detail = e.response.text if e.response is not None else str(e)
+                st.error(f"❌ API Error {status}: {detail}")
             except requests.exceptions.RequestException as e:
                 st.error(f"❌ API Error: {str(e)}")
             except Exception as e:
