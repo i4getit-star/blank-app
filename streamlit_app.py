@@ -97,39 +97,21 @@ if st.button("🔍 Get Solar Predictions", use_container_width=True):
     else:
         with st.spinner("📊 Fetching solar predictions..."):
             try:
+                api_key = api_key.strip()
+                allowed_parameters = ["ghi", "dni", "dhi", "air_temp", "wind_speed"]
+                selected_output_parameters = [p for p in output_parameters if p in allowed_parameters]
+
+                if not selected_output_parameters:
+                    st.error("❌ Please select at least one valid output parameter.")
+                    raise ValueError("No valid output parameters selected.")
+
                 # Prepare parameters
                 params = {
                     "latitude": latitude,
                     "longitude": longitude,
                     "hours": horizon,
                     "api_key": api_key,
-                    "output_parameters": ",".join(output_parameters)
-                }
-                
-                # Make API request
-                response = requests.get(SOLCAST_API_BASE, params=params, timeout=10)
-                response.raise_for_status()
-                
-                data = response.json()
-                
-                # Check for forecasts
-                if "forecasts" not in data or len(data["forecasts"]) == 0:
-                    st.error("❌ No forecasts returned. Please check your coordinates and API key.")
-                else:
-                    forecasts = data["forecasts"]
-                    
-                    # Create DataFrame
-                    df = pd.DataFrame(forecasts)
-                    df["period_end"] = pd.to_datetime(df["period_end"])
-                    df = df.sort_values("period_end")
-                    
-                    # Display location info
-                    st.success(f"✅ Retrieved {len(df)} forecast records")
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("📍 Latitude", f"{latitude:.4f}")
-                    with col2:
-                        st.metric("📍 Longitude", f"{longitude:.4f}")
+                    "output_parameters": ",".join(selected_output_parameters)
                     with col3:
                         st.metric("📅 Forecast Period", f"{horizon} hours")
                     
