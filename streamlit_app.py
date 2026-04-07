@@ -112,7 +112,9 @@ if st.button("🔍 Get Solar Predictions", use_container_width=True):
                     "hours": horizon,
                     "api_key": api_key,
                     "output_parameters": ",".join(selected_output_parameters)
-                    with col3:
+                }
+                
+                with col3:
                         st.metric("📅 Forecast Period", f"{horizon} hours")
                     
                     st.divider()
