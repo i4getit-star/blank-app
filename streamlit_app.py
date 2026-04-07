@@ -114,128 +114,126 @@ if st.button("🔍 Get Solar Predictions", use_container_width=True):
                     "output_parameters": ",".join(selected_output_parameters)
                 }
                 
-                with col3:
-                        st.metric("📅 Forecast Period", f"{horizon} hours")
+                # Make API request (placeholder - implement with actual API call)
+                st.divider()
+                
+                # Display data table
+                st.subheader("📋 Forecast Data")
+                display_cols = ["period_end"] + [col for col in df.columns if col != "period_end"]
+                st.dataframe(df[display_cols], use_container_width=True)
+                
+                st.divider()
+                
+                # Create visualizations
+                st.subheader("📊 Solar Irradiance Charts")
+                
+                # GHI Chart (if available)
+                if "ghi" in df.columns:
+                    fig_ghi = go.Figure()
+                    fig_ghi.add_trace(go.Scatter(
+                        x=df["period_end"],
+                        y=df["ghi"],
+                        mode="lines+markers",
+                        name="GHI (W/m²)",
+                        line=dict(color="orange", width=2),
+                        fill="tozeroy"
+                    ))
+                    fig_ghi.update_layout(
+                        title="Global Horizontal Irradiance (GHI)",
+                        xaxis_title="Date/Time",
+                        yaxis_title="Irradiance (W/m²)",
+                        hovermode="x unified",
+                        height=400
+                    )
+                    st.plotly_chart(fig_ghi, use_container_width=True)
+                
+                # DNI and DHI Chart (if available)
+                if "dni" in df.columns or "dhi" in df.columns:
+                    fig_components = go.Figure()
                     
-                    st.divider()
-                    
-                    # Display data table
-                    st.subheader("📋 Forecast Data")
-                    display_cols = ["period_end"] + [col for col in df.columns if col != "period_end"]
-                    st.dataframe(df[display_cols], use_container_width=True)
-                    
-                    st.divider()
-                    
-                    # Create visualizations
-                    st.subheader("📊 Solar Irradiance Charts")
-                    
-                    # GHI Chart (if available)
-                    if "ghi" in df.columns:
-                        fig_ghi = go.Figure()
-                        fig_ghi.add_trace(go.Scatter(
+                    if "dni" in df.columns:
+                        fig_components.add_trace(go.Scatter(
                             x=df["period_end"],
-                            y=df["ghi"],
+                            y=df["dni"],
                             mode="lines+markers",
-                            name="GHI (W/m²)",
-                            line=dict(color="orange", width=2),
-                            fill="tozeroy"
+                            name="DNI (W/m²)",
+                            line=dict(color="red", width=2)
                         ))
-                        fig_ghi.update_layout(
-                            title="Global Horizontal Irradiance (GHI)",
-                            xaxis_title="Date/Time",
-                            yaxis_title="Irradiance (W/m²)",
-                            hovermode="x unified",
-                            height=400
-                        )
-                        st.plotly_chart(fig_ghi, use_container_width=True)
                     
-                    # DNI and DHI Chart (if available)
-                    if "dni" in df.columns or "dhi" in df.columns:
-                        fig_components = go.Figure()
-                        
-                        if "dni" in df.columns:
-                            fig_components.add_trace(go.Scatter(
+                    if "dhi" in df.columns:
+                        fig_components.add_trace(go.Scatter(
+                            x=df["period_end"],
+                            y=df["dhi"],
+                            mode="lines+markers",
+                            name="DHI (W/m²)",
+                            line=dict(color="blue", width=2)
+                        ))
+                    
+                    fig_components.update_layout(
+                        title="Solar Irradiance Components",
+                        xaxis_title="Date/Time",
+                        yaxis_title="Irradiance (W/m²)",
+                        hovermode="x unified",
+                        height=400
+                    )
+                    st.plotly_chart(fig_components, use_container_width=True)
+                
+                # Weather data (if available)
+                if "air_temp" in df.columns or "wind_speed" in df.columns:
+                    st.subheader("🌡️ Weather Conditions")
+                    col1, col2 = st.columns(2)
+                    
+                    if "air_temp" in df.columns:
+                        with col1:
+                            fig_temp = go.Figure()
+                            fig_temp.add_trace(go.Scatter(
                                 x=df["period_end"],
-                                y=df["dni"],
+                                y=df["air_temp"],
                                 mode="lines+markers",
-                                name="DNI (W/m²)",
+                                name="Temperature (°C)",
                                 line=dict(color="red", width=2)
                             ))
-                        
-                        if "dhi" in df.columns:
-                            fig_components.add_trace(go.Scatter(
+                            fig_temp.update_layout(
+                                title="Air Temperature",
+                                xaxis_title="Date/Time",
+                                yaxis_title="Temperature (°C)",
+                                hovermode="x unified",
+                                height=300
+                            )
+                            st.plotly_chart(fig_temp, use_container_width=True)
+                    
+                    if "wind_speed" in df.columns:
+                        with col2:
+                            fig_wind = go.Figure()
+                            fig_wind.add_trace(go.Scatter(
                                 x=df["period_end"],
-                                y=df["dhi"],
+                                y=df["wind_speed"],
                                 mode="lines+markers",
-                                name="DHI (W/m²)",
+                                name="Wind Speed (m/s)",
                                 line=dict(color="blue", width=2)
                             ))
-                        
-                        fig_components.update_layout(
-                            title="Solar Irradiance Components",
-                            xaxis_title="Date/Time",
-                            yaxis_title="Irradiance (W/m²)",
-                            hovermode="x unified",
-                            height=400
-                        )
-                        st.plotly_chart(fig_components, use_container_width=True)
-                    
-                    # Weather data (if available)
-                    if "air_temp" in df.columns or "wind_speed" in df.columns:
-                        st.subheader("🌡️ Weather Conditions")
-                        col1, col2 = st.columns(2)
-                        
-                        if "air_temp" in df.columns:
-                            with col1:
-                                fig_temp = go.Figure()
-                                fig_temp.add_trace(go.Scatter(
-                                    x=df["period_end"],
-                                    y=df["air_temp"],
-                                    mode="lines+markers",
-                                    name="Temperature (°C)",
-                                    line=dict(color="red", width=2)
-                                ))
-                                fig_temp.update_layout(
-                                    title="Air Temperature",
-                                    xaxis_title="Date/Time",
-                                    yaxis_title="Temperature (°C)",
-                                    hovermode="x unified",
-                                    height=300
-                                )
-                                st.plotly_chart(fig_temp, use_container_width=True)
-                        
-                        if "wind_speed" in df.columns:
-                            with col2:
-                                fig_wind = go.Figure()
-                                fig_wind.add_trace(go.Scatter(
-                                    x=df["period_end"],
-                                    y=df["wind_speed"],
-                                    mode="lines+markers",
-                                    name="Wind Speed (m/s)",
-                                    line=dict(color="blue", width=2)
-                                ))
-                                fig_wind.update_layout(
-                                    title="Wind Speed",
-                                    xaxis_title="Date/Time",
-                                    yaxis_title="Wind Speed (m/s)",
-                                    hovermode="x unified",
-                                    height=300
-                                )
-                                st.plotly_chart(fig_wind, use_container_width=True)
-                    
-                    # Summary statistics
-                    st.divider()
-                    st.subheader("📈 Summary Statistics")
-                    
-                    stats_col = st.columns(len(output_parameters))
-                    for idx, param in enumerate(output_parameters):
-                        if param in df.columns:
-                            with stats_col[idx]:
-                                st.metric(
-                                    f"{param.upper()} Max",
-                                    f"{df[param].max():.2f}",
-                                    delta=f"Avg: {df[param].mean():.2f}"
-                                )
+                            fig_wind.update_layout(
+                                title="Wind Speed",
+                                xaxis_title="Date/Time",
+                                yaxis_title="Wind Speed (m/s)",
+                                hovermode="x unified",
+                                height=300
+                            )
+                            st.plotly_chart(fig_wind, use_container_width=True)
+                
+                # Summary statistics
+                st.divider()
+                st.subheader("📈 Summary Statistics")
+                
+                stats_col = st.columns(len(output_parameters))
+                for idx, param in enumerate(output_parameters):
+                    if param in df.columns:
+                        with stats_col[idx]:
+                            st.metric(
+                                f"{param.upper()} Max",
+                                f"{df[param].max():.2f}",
+                                delta=f"Avg: {df[param].mean():.2f}"
+                            )
             
             except requests.exceptions.HTTPError as e:
                 status = e.response.status_code if e.response is not None else "unknown"
