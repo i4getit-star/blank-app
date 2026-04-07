@@ -29,6 +29,9 @@ You need a **free Solcast API key** from [solcast.com](https://solcast.com)
    SOLCAST_API_KEY=your_api_key_here
    ```
 
+If you run the app and do not see the sidebar, use the main page API key field that appears below the warning message.
+
+
 ## Usage
 
 Run the app:

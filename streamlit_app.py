@@ -27,6 +27,7 @@ st.write("Get accurate solar irradiance predictions using the Solcast API")
 # Sidebar for configuration
 with st.sidebar:
     st.header("⚙️ Configuration")
+    st.write("Enter your Solcast API key here, or set `SOLCAST_API_KEY` in a `.env` file.")
     
     # API Key
     api_key = st.text_input(
@@ -35,10 +36,17 @@ with st.sidebar:
         type="password",
         help="Get your free API key from https://solcast.com"
     )
-    
-    if not api_key:
-        st.warning("⚠️ Please enter your Solcast API key to get started")
-        st.info("Get a free API key at [solcast.com](https://solcast.com)")
+    st.caption("If the sidebar is hidden, enter your API key below on the main page.")
+
+if not api_key:
+    st.warning("⚠️ Please enter your Solcast API key in the sidebar or below.")
+    st.info("Get a free API key at [solcast.com](https://solcast.com)")
+    api_key = st.text_input(
+        "Solcast API Key",
+        value="",
+        type="password",
+        help="Enter your Solcast API key here if the sidebar is not visible."
+    )
 
 # Location input
 col1, col2 = st.columns(2)
