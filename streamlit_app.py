@@ -114,7 +114,20 @@ if st.button("🔍 Get Solar Predictions", use_container_width=True):
                     "output_parameters": ",".join(selected_output_parameters)
                 }
                 
-                # Make API request (placeholder - implement with actual API call)
+                # Make API request
+                response = requests.get(SOLCAST_API_BASE, params=params)
+                response.raise_for_status()
+                data = response.json()
+                
+                # Convert to DataFrame
+                if "forecasts" in data:
+                    df = pd.DataFrame(data["forecasts"])
+                    # Parse datetime columns
+                    df["period_end"] = pd.to_datetime(df["period_end"])
+                else:
+                    st.error("❌ No forecast data in response")
+                    raise ValueError("Invalid API response format")
+                
                 st.divider()
                 
                 # Display data table
