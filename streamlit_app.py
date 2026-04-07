@@ -10,8 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-SOLCAST_API_BASE = "https://api.solcast.com.au/world_radiation/forecasts"
-SOLCAST_HISTORIC_BASE = "https://api.solcast.com.au/world_radiation/historic"
+SOLCAST_API_BASE = "https://api.solcast.com.au/rooftop_sites"
 
 # Page configuration
 st.set_page_config(
@@ -27,7 +26,7 @@ st.write("Get accurate solar irradiance predictions using the Solcast API")
 # Sidebar for configuration
 with st.sidebar:
     st.header("⚙️ Configuration")
-    st.write("Enter your Solcast API key here, or set `SOLCAST_API_KEY` in a `.env` file.")
+    st.write("Enter your Solcast API key and Rooftop Site ID here, or set `SOLCAST_API_KEY` in a `.env` file.")
     
     # API Key
     api_key = st.text_input(
@@ -36,7 +35,14 @@ with st.sidebar:
         type="password",
         help="Get your free API key from https://solcast.com"
     )
-    st.caption("If the sidebar is hidden, enter your API key below on the main page.")
+    
+    # Site ID
+    site_id = st.text_input(
+        "Rooftop Site ID",
+        value="e402-ce51-2fa1-4749",
+        help="Enter your Solcast rooftop site ID (e.g., e402-ce51-2fa1-4749)"
+    )
+    st.caption("If the sidebar is hidden, enter your credentials below on the main page.")
 
 if not api_key:
     st.warning("⚠️ Please enter your Solcast API key in the sidebar or below.")
@@ -48,77 +54,39 @@ if not api_key:
         help="Enter your Solcast API key here if the sidebar is not visible."
     )
 
-# Location input
-col1, col2 = st.columns(2)
-with col1:
-    latitude = st.number_input(
-        "📍 Latitude",
-        value=-33.8688,
-        min_value=-90.0,
-        max_value=90.0,
-        step=0.0001,
-        help="Enter latitude in decimal degrees (e.g., -33.8688 for Sydney)"
+if not site_id:
+    st.warning("⚠️ Please enter your Solcast Rooftop Site ID in the sidebar or below.")
+    site_id = st.text_input(
+        "Rooftop Site ID",
+        value="",
+        help="Enter your Solcast rooftop site ID"
     )
 
-with col2:
-    longitude = st.number_input(
-        "📍 Longitude",
-        value=151.2093,
-        min_value=-180.0,
-        max_value=180.0,
-        step=0.0001,
-        help="Enter longitude in decimal degrees (e.g., 151.2093 for Sydney)"
-    )
-
-# Additional parameters
-with st.expander("🔧 Advanced Options"):
-    col1, col2 = st.columns(2)
-    with col1:
-        horizon = st.slider(
-            "Horizon (hours)",
-            min_value=1,
-            max_value=168,
-            value=24,
-            help="Number of hours to forecast"
-        )
-    
-    with col2:
-        output_parameters = st.multiselect(
-            "Output Parameters",
-            options=["ghi", "dni", "dhi", "air_temp", "wind_speed"],
-            default=["ghi", "dni", "dhi"],
-            help="Select which solar parameters to retrieve"
-        )
 
 # Get predictions button
 if st.button("🔍 Get Solar Predictions", use_container_width=True):
     if not api_key:
         st.error("❌ Please enter your Solcast API key")
+    elif not site_id:
+        st.error("❌ Please enter your Rooftop Site ID")
     else:
         with st.spinner("📊 Fetching solar predictions..."):
             try:
                 api_key = api_key.strip()
-                allowed_parameters = ["ghi", "dni", "dhi", "air_temp", "wind_speed"]
-                selected_output_parameters = [p for p in output_parameters if p in allowed_parameters]
-
-                if not selected_output_parameters:
-                    st.error("❌ Please select at least one valid output parameter.")
-                    raise ValueError("No valid output parameters selected.")
-
-                # Prepare parameters
+                site_id = site_id.strip()
+                
+                # Prepare API call
+                api_url = f"{SOLCAST_API_BASE}/{site_id}/forecasts"
                 params = {
-                    "latitude": latitude,
-                    "longitude": longitude,
-                    "hours": horizon,
-                    "api_key": api_key,
-                    "output_parameters": ",".join(selected_output_parameters)
+                    "format": "json",
+                    "api_key": api_key
                 }
                 
                 # Make API request with browser-like headers
                 headers = {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
                 }
-                response = requests.get(SOLCAST_API_BASE, params=params, headers=headers)
+                response = requests.get(api_url, params=params, headers=headers)
                 
                 response.raise_for_status()
                 data = response.json()
@@ -127,10 +95,10 @@ if st.button("🔍 Get Solar Predictions", use_container_width=True):
                 if "forecasts" in data:
                     df = pd.DataFrame(data["forecasts"])
                     # Parse datetime columns
-                    df["period_end"] = pd.to_datetime(df["period_end"])
-                elif "data" in data or "radiation_data" in data:
-                    # Try alternate response format
-                    df = pd.DataFrame(data.get("data", data.get("radiation_data", [])))
+                    if "period_end" in df.columns:
+                        df["period_end"] = pd.to_datetime(df["period_end"])
+                elif "data" in data:
+                    df = pd.DataFrame(data["data"])
                     if "period_end" in df.columns:
                         df["period_end"] = pd.to_datetime(df["period_end"])
                 else:
@@ -248,15 +216,16 @@ if st.button("🔍 Get Solar Predictions", use_container_width=True):
                 st.divider()
                 st.subheader("📈 Summary Statistics")
                 
-                stats_col = st.columns(len(output_parameters))
-                for idx, param in enumerate(output_parameters):
-                    if param in df.columns:
-                        with stats_col[idx]:
-                            st.metric(
-                                f"{param.upper()} Max",
-                                f"{df[param].max():.2f}",
-                                delta=f"Avg: {df[param].mean():.2f}"
-                            )
+                # Get numeric columns (exclude period_end)
+                numeric_cols = [col for col in df.columns if col != "period_end" and df[col].dtype in ['float64', 'int64']]
+                stats_col = st.columns(len(numeric_cols))
+                for idx, param in enumerate(numeric_cols):
+                    with stats_col[idx]:
+                        st.metric(
+                            f"{param.upper()} Max",
+                            f"{df[param].max():.2f}",
+                            delta=f"Avg: {df[param].mean():.2f}"
+                        )
             
             except requests.exceptions.HTTPError as e:
                 status = e.response.status_code if e.response is not None else "unknown"
